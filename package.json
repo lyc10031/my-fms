@@ -1,0 +1,28 @@
+{
+  "name": "my-vue-app-auto",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@element-plus/icons-vue": "^2.3.1",
+    "dompurify": "^3.1.6",
+    "element-plus": "^2.8.2",
+    "md-editor-v3": "^4.20.1",
+    "save": "^2.9.0",
+    "vue": "^3.4.37",
+    "vue-router": "^4.4.4"
+  },
+  "devDependencies": {
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@vitejs/plugin-vue": "^5.1.2",
+    "sass-embedded": "^1.78.0",
+    "unplugin-auto-import": "^0.18.3",
+    "unplugin-vue-components": "^0.27.4",
+    "vite": "^5.4.1"
+  }
+}
