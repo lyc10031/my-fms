@@ -1,96 +1,80 @@
 <template>
   <div class="create-fault">
-    <h2>新建故障</h2>
+
     <el-form :model="faultForm" label-width="100px">
+      <h2>新建故障</h2>
       <el-form-item label="故障简述">
         <el-input type="textarea" v-model="faultForm.desc" autosize></el-input>
-      </el-form-item>  
+      </el-form-item>
       <div class="form-item-container">
-      <el-form-item label="故障等级" >
-        <el-select v-model="faultForm.level" placeholder="请选择故障等级" class="custom-select">
-          <el-option label="低" value="低"></el-option>
-          <el-option label="中" value="中"></el-option>
-          <el-option label="高" value="高"></el-option>
-        </el-select>
-      </el-form-item>
-      <el-form-item label="初始状态">
-        <el-select v-model="faultForm.initialStatus" placeholder="请选择初始状态" class="custom-select">
-          <el-option label="未处理" value="未处理" ></el-option>
-          <el-option label="处理中" value="处理中" ></el-option>
-        </el-select>
-      </el-form-item>
+        <el-form-item label="故障等级">
+          <el-select v-model="faultForm.level" placeholder="请选择故障等级" class="custom-select">
+            <el-option label="低" value="低"></el-option>
+            <el-option label="中" value="中"></el-option>
+            <el-option label="高" value="高"></el-option>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="初始状态">
+          <el-select v-model="faultForm.initialStatus" placeholder="请选择初始状态" class="custom-select">
+            <el-option label="未处理" value="未处理"></el-option>
+            <el-option label="处理中" value="处理中"></el-option>
+          </el-select>
+        </el-form-item>
+      </div>
       <el-form-item label="故障影响">
         <el-input type="textarea" v-model="faultForm.impact" autosize></el-input>
-    </el-form-item>
-    </div>
+      </el-form-item>
+        <h2>故障处理时间线</h2>
+        <el-timeline>
+          <el-timeline-item v-for="(activity, index) in faultForm.timeline" :key="index">
 
-    </el-form>
+            <div class="timeline-timestamp" v-if="editingTimestampIndex !== index">
+              <span @click="startEditingTimestamp(index, activity)">{{ formatTimestamp(activity.timestamp) }}</span>
+            </div>
 
-    <h3>故障处理时间线</h3>
-    <el-timeline>
-      <el-timeline-item
-        v-for="(activity, index) in faultForm.timeline"
-        :key="index"
-      >
-        
-        <div class="timeline-timestamp" v-if="editingTimestampIndex !== index">
-          <span @click="startEditingTimestamp(index, activity)">{{ formatTimestamp(activity.timestamp) }}</span>
-        </div>
-        
-        <el-date-picker
-          v-else
-          v-model="editingTimestamp"
-          type="datetime"
-          placeholder="选择日期时间"
-          format="YYYY年MM月DD日 HH:mm:ss"
-          value-format="YYYY-MM-DDTHH:mm:ss"
-          @change="saveEditingTimestamp(activity, index)"
-          @clear="cancelEditingTimestamp"
-          @blur="cancelEditingTimestamp"
-          @close="cancelEditingTimestamp"
-        />
+            <el-date-picker v-else v-model="editingTimestamp" type="datetime" placeholder="选择日期时间"
+              format="YYYY年MM月DD日 HH:mm:ss" value-format="YYYY-MM-DDTHH:mm:ss"
+              @change="saveEditingTimestamp(activity, index)" @clear="cancelEditingTimestamp"
+              @blur="cancelEditingTimestamp" @close="cancelEditingTimestamp" />
 
-        <div class="timeline-content">
-         
-          <md-editor v-if="editingIndex === index" v-model="editingContent" />
-          <MdPreview v-else :modelValue="activity.content" />
-        </div>
-        <div class="timeline-actions">
-          <el-button v-if="editingIndex !== index" type="primary" size="small" @click="startEditing(index, activity)">编辑</el-button>
-          <el-button v-else type="success" size="small" @click="saveEditing(index)">保存</el-button>
-          <el-button v-if="editingIndex !== index" type="danger" size="small" @click="removeActivity(index)">删除</el-button>
-          <el-button v-else type="info" size="small" @click="cancelEditing">取消</el-button>
-        </div>
-      </el-timeline-item>
-    </el-timeline>
+            <div class="timeline-content">
 
-    <el-form :model="newActivity" label-width="100px">
-      <el-form-item label="时间">
-        <el-date-picker
-          v-model="newActivity.timestamp"
-          type="datetime"
-          placeholder="选择日期时间"
-        ></el-date-picker>
+              <md-editor v-if="editingIndex === index" v-model="editingContent" />
+              <MdPreview v-else :modelValue="activity.content" />
+            </div>
+            <div class="timeline-actions">
+              <el-button v-if="editingIndex !== index" type="primary" size="small"
+                @click="startEditing(index, activity)">编辑</el-button>
+              <el-button v-else type="success" size="small" @click="saveEditing(index)">保存</el-button>
+              <el-button v-if="editingIndex !== index" type="danger" size="small"
+                @click="removeActivity(index)">删除</el-button>
+              <el-button v-else type="info" size="small" @click="cancelEditing">取消</el-button>
+            </div>
+          </el-timeline-item>
+        </el-timeline>
+      
+
+      <el-form-item label="时间" :model="newActivity" label-width="100px">
+        <el-date-picker v-model="newActivity.timestamp" type="datetime" placeholder="选择日期时间"></el-date-picker>
       </el-form-item>
       <el-form-item label="处理内容">
         <!-- <div class="custom-md-editor"> -->
-          <md-editor v-model="newActivity.content" preview-theme="light"  />
+        <md-editor v-model="newActivity.content" preview-theme="light" />
         <!-- </div> -->
       </el-form-item>
       <el-form-item>
         <el-button type="primary" @click="addActivity">添加处理记录</el-button>
       </el-form-item>
-    </el-form>
-    <el-form :model="faultForm" label-width="100px">
-    <h3>改进todo</h3>
-      <el-form-item >
-        <md-editor v-model="newActivity.content" preview-theme="light"  />
+
+      <h2>改进todo</h2>
+      <el-form-item :model="faultForm" label-width="100px">
+        <md-editor v-model="newActivity.content" preview-theme="light" />
       </el-form-item>
     </el-form>
     <el-button type="primary" @click="submitFault">提交故障</el-button>
   </div>
 </template>
- 
+
 
 
 
@@ -238,7 +222,7 @@ const cancelEditingTimestamp = () => {
   // Exit the time editing state
   editingTimestampIndex.value = -1;
 };
-</script> 
+</script>
 
 
 <style scoped lang="scss">
@@ -254,7 +238,8 @@ const cancelEditingTimestamp = () => {
 
 /* 定义一个可调节大小的文本区域样式 */
 .faultForm-description-resizeable-textarea .el-textarea__inner {
-  resize: vertical; /* 允许垂直方向调整大小 */
+  resize: vertical;
+  /* 允许垂直方向调整大小 */
 }
 
 :deep(.md-editor) {
@@ -339,7 +324,8 @@ const cancelEditingTimestamp = () => {
 .timeline-timestamp {
   font-size: 1.2em;
   font-weight: bold;
-  color: #409eff; /* 颜色可以根据需求修改 */
+  color: #409eff;
+  /* 颜色可以根据需求修改 */
   margin-bottom: 10px;
 }
 
@@ -349,15 +335,18 @@ const cancelEditingTimestamp = () => {
   padding: 10px;
   border: 1px solid #ebeef5;
   border-radius: 4px;
-  
+
 }
+
 .form-item-container {
   margin-top: 20px;
   display: flex;
-  gap: 20px; /* 可选：设置组件之间的间距 */
+  gap: 20px;
+  /* 可选：设置组件之间的间距 */
 }
 
 .custom-select {
-  width: 200px; /* 设置选择框的宽度 */
+  width: 200px;
+  /* 设置选择框的宽度 */
 }
 </style>
