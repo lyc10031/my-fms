@@ -1,39 +1,29 @@
 <template>
-  <el-breadcrumb separator="/">
-      <el-breadcrumb-item :to="{ path: '/' }">homepage</el-breadcrumb-item>
-      <el-breadcrumb-item><a href="/">promotion management</a></el-breadcrumb-item>
-      <el-breadcrumb-item>promotion list</el-breadcrumb-item>
-      <el-breadcrumb-item>promotion detail</el-breadcrumb-item>
-  </el-breadcrumb>
   <div class="create-fault">
     <h2>新建故障</h2>
     <el-form :model="faultForm" label-width="100px">
-      <el-form-item label="故障名称">
-        <el-input v-model="faultForm.name"></el-input>
-      </el-form-item>
-      
-       <el-form-item label="故障简述">
-
+      <el-form-item label="故障简述">
         <el-input type="textarea" v-model="faultForm.desc" autosize></el-input>
-        <!-- <el-textarea v-model="faultForm.description" rows="3" class="faultForm-description-resizeable-textarea"></el-textarea> -->
-      </el-form-item> 
-      <!-- <el-form-item label="故障简述">
-        <component :is="textareaComponent" v-model="faultForm.description" rows="3" class="faultForm-description-resizeable-textarea"></component>
-      </el-form-item> -->
-      <!-- <el-button @click="loadTextarea">加载 Textarea</el-button>      -->
-      <el-form-item label="故障等级">
-        <el-select v-model="faultForm.level" placeholder="请选择故障等级">
+      </el-form-item>  
+      <div class="form-item-container">
+      <el-form-item label="故障等级" >
+        <el-select v-model="faultForm.level" placeholder="请选择故障等级" class="custom-select">
           <el-option label="低" value="低"></el-option>
           <el-option label="中" value="中"></el-option>
           <el-option label="高" value="高"></el-option>
         </el-select>
       </el-form-item>
       <el-form-item label="初始状态">
-        <el-select v-model="faultForm.initialStatus" placeholder="请选择初始状态">
-          <el-option label="未处理" value="未处理"></el-option>
-          <el-option label="处理中" value="处理中"></el-option>
+        <el-select v-model="faultForm.initialStatus" placeholder="请选择初始状态" class="custom-select">
+          <el-option label="未处理" value="未处理" ></el-option>
+          <el-option label="处理中" value="处理中" ></el-option>
         </el-select>
       </el-form-item>
+      <el-form-item label="故障影响">
+        <el-input type="textarea" v-model="faultForm.impact" autosize></el-input>
+    </el-form-item>
+    </div>
+
     </el-form>
 
     <h3>故障处理时间线</h3>
@@ -84,14 +74,19 @@
       </el-form-item>
       <el-form-item label="处理内容">
         <!-- <div class="custom-md-editor"> -->
-          <md-editor v-model="newActivity.content" preview-theme="vuepress"  />
+          <md-editor v-model="newActivity.content" preview-theme="light"  />
         <!-- </div> -->
       </el-form-item>
       <el-form-item>
         <el-button type="primary" @click="addActivity">添加处理记录</el-button>
       </el-form-item>
     </el-form>
-
+    <el-form :model="faultForm" label-width="100px">
+    <h3>改进todo</h3>
+      <el-form-item >
+        <md-editor v-model="newActivity.content" preview-theme="light"  />
+      </el-form-item>
+    </el-form>
     <el-button type="primary" @click="submitFault">提交故障</el-button>
   </div>
 </template>
@@ -103,7 +98,7 @@
 import DOMPurify from 'dompurify';
 import 'md-editor-v3/lib/style.css';
 
-const router = useRouter()
+const router = useRouter() // 初始化 router
 
 // 编辑状态
 const editingIndex = ref(-1)  // 当前编辑中的内容索引
@@ -113,10 +108,11 @@ const originalTimestamp = ref(new Date())  // 保存原始时间
 const editingTimestampIndex = ref(-1)  // 记录当前正在编辑时间的位置索引
 
 const faultForm = ref({
-  name: '',
+  impact: '',
   description: '',
   initialStatus: '',
   timeline: []
+
 })
 const newActivity = ref({
   timestamp: '',
@@ -247,7 +243,7 @@ const cancelEditingTimestamp = () => {
 
 <style scoped lang="scss">
 .create-fault {
-  max-width: 800px;
+  max-width: fit-content; // 修复拼写错误
   margin: 0 auto;
   padding: 20px;
   font-family: Arial, Helvetica, sans-serif;
@@ -354,5 +350,14 @@ const cancelEditingTimestamp = () => {
   border: 1px solid #ebeef5;
   border-radius: 4px;
   
+}
+.form-item-container {
+  margin-top: 20px;
+  display: flex;
+  gap: 20px; /* 可选：设置组件之间的间距 */
+}
+
+.custom-select {
+  width: 200px; /* 设置选择框的宽度 */
 }
 </style>
