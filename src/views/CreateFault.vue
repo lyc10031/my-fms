@@ -1,6 +1,5 @@
 <template>
   <div class="create-fault">
-
     <el-form :model="faultForm" label-width="100px">
       <h2>新建故障</h2>
       <el-form-item label="故障简述">
@@ -68,7 +67,7 @@
 
       <h2>改进todo</h2>
       <el-form-item :model="faultForm" label-width="100px">
-        <md-editor v-model="newActivity.content" preview-theme="light" />
+        <md-editor v-model="faultForm.todoContent" preview-theme="light" />
       </el-form-item>
     </el-form>
     <el-button type="primary" @click="submitFault">提交故障</el-button>
@@ -95,7 +94,8 @@ const faultForm = ref({
   impact: '',
   description: '',
   initialStatus: '',
-  timeline: []
+  timeline: [],
+  todoContent: ''
 
 })
 const newActivity = ref({
