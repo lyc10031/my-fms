@@ -1,5 +1,4 @@
 <template>
-    
     <div>
       <h1>Dashboard</h1>
       <el-row :gutter="20">

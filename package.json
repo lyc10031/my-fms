@@ -10,10 +10,13 @@
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.1",
+    "@vue/compiler-dom": "^3.5.6",
+    "@vue/compiler-sfc": "^3.5.6",
     "dompurify": "^3.1.6",
     "element-plus": "^2.8.2",
     "md-editor-v3": "^4.20.1",
     "save": "^2.9.0",
+    "typescript": "^5.6.2",
     "vue": "^3.4.37",
     "vue-router": "^4.4.4"
   },

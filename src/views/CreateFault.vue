@@ -1,11 +1,15 @@
 <template>
   <div class="create-fault">
-    <el-form :model="faultForm" label-width="100px">
+    <el-form :model="faultForm" label-width="120px">
       <h2>新建故障</h2>
       <el-form-item label="故障简述">
         <el-input type="textarea" v-model="faultForm.desc" autosize></el-input>
       </el-form-item>
       <div class="form-item-container">
+        <el-form-item label="故障类型">
+          <el-cascader v-model="faultForm.category" :options="categoryOptions" :props="cascaderProps"
+            @change="handleChange" class="custom-select" />
+        </el-form-item>
         <el-form-item label="故障等级">
           <el-select v-model="faultForm.level" placeholder="请选择故障等级" class="custom-select">
             <el-option label="低" value="低"></el-option>
@@ -13,45 +17,56 @@
             <el-option label="高" value="高"></el-option>
           </el-select>
         </el-form-item>
-        <el-form-item label="初始状态">
-          <el-select v-model="faultForm.initialStatus" placeholder="请选择初始状态" class="custom-select">
+        <el-form-item label="当前状态">
+          <el-select v-model="faultForm.currentStatus" placeholder="请选择故障当前状态" class="custom-select">
             <el-option label="未处理" value="未处理"></el-option>
             <el-option label="处理中" value="处理中"></el-option>
+            <el-option label="已修复" value="已修复"></el-option>
+            <el-option label="todo 跟进中" value="todo 跟进中"></el-option>
           </el-select>
         </el-form-item>
       </div>
       <el-form-item label="故障影响">
         <el-input type="textarea" v-model="faultForm.impact" autosize></el-input>
       </el-form-item>
-        <h2>故障处理时间线</h2>
-        <el-timeline>
-          <el-timeline-item v-for="(activity, index) in faultForm.timeline" :key="index">
+      <el-form-item label="故障持续时间">
+      <el-date-picker
+        v-model="faultForm.duration"
+        type="datetimerange"
+        range-separator="To"
+        start-placeholder="Start date"
+        end-placeholder="End date"
+      />
+    </el-form-item>
+      <h2>故障处理时间线</h2>
+      <el-timeline>
+        <el-timeline-item v-for="(activity, index) in faultForm.timeline" :key="index">
 
-            <div class="timeline-timestamp" v-if="editingTimestampIndex !== index">
-              <span @click="startEditingTimestamp(index, activity)">{{ formatTimestamp(activity.timestamp) }}</span>
-            </div>
+          <div class="timeline-timestamp" v-if="editingTimestampIndex !== index">
+            <span @click="startEditingTimestamp(index, activity)">{{ formatTimestamp(activity.timestamp) }}</span>
+          </div>
 
-            <el-date-picker v-else v-model="editingTimestamp" type="datetime" placeholder="选择日期时间"
-              format="YYYY年MM月DD日 HH:mm:ss" value-format="YYYY-MM-DDTHH:mm:ss"
-              @change="saveEditingTimestamp(activity, index)" @clear="cancelEditingTimestamp"
-              @blur="cancelEditingTimestamp" @close="cancelEditingTimestamp" />
+          <el-date-picker v-else v-model="editingTimestamp" type="datetime" placeholder="选择日期时间"
+            format="YYYY年MM月DD日 HH:mm:ss" value-format="YYYY-MM-DDTHH:mm:ss"
+            @change="saveEditingTimestamp(activity, index)" @clear="cancelEditingTimestamp"
+            @blur="cancelEditingTimestamp" @close="cancelEditingTimestamp" />
 
-            <div class="timeline-content">
+          <div class="timeline-content">
 
-              <md-editor v-if="editingIndex === index" v-model="editingContent" />
-              <MdPreview v-else :modelValue="activity.content" />
-            </div>
-            <div class="timeline-actions">
-              <el-button v-if="editingIndex !== index" type="primary" size="small"
-                @click="startEditing(index, activity)">编辑</el-button>
-              <el-button v-else type="success" size="small" @click="saveEditing(index)">保存</el-button>
-              <el-button v-if="editingIndex !== index" type="danger" size="small"
-                @click="removeActivity(index)">删除</el-button>
-              <el-button v-else type="info" size="small" @click="cancelEditing">取消</el-button>
-            </div>
-          </el-timeline-item>
-        </el-timeline>
-      
+            <md-editor v-if="editingIndex === index" v-model="editingContent" />
+            <MdPreview v-else :modelValue="activity.content" />
+          </div>
+          <div class="timeline-actions">
+            <el-button v-if="editingIndex !== index" type="primary" size="small"
+              @click="startEditing(index, activity)">编辑</el-button>
+            <el-button v-else type="success" size="small" @click="saveEditing(index)">保存</el-button>
+            <el-button v-if="editingIndex !== index" type="danger" size="small"
+              @click="removeActivity(index)">删除</el-button>
+            <el-button v-else type="info" size="small" @click="cancelEditing">取消</el-button>
+          </div>
+        </el-timeline-item>
+      </el-timeline>
+
 
       <el-form-item label="时间" :model="newActivity" label-width="100px">
         <el-date-picker v-model="newActivity.timestamp" type="datetime" placeholder="选择日期时间"></el-date-picker>
@@ -91,17 +106,66 @@ const originalTimestamp = ref(new Date())  // 保存原始时间
 const editingTimestampIndex = ref(-1)  // 记录当前正在编辑时间的位置索引
 
 const faultForm = ref({
-  impact: '',
-  description: '',
-  initialStatus: '',
-  timeline: [],
-  todoContent: ''
-
+  desc: '', // 故障简述
+  category: [], // 故障类型
+  level: '', // 故障等级
+  currentStatus: '', // 故障当前状态
+  impact: '', // 故障影响
+  duration: '', // 故障持续时间
+  timeline: [], // 故障处理时间线
+  todoContent: ''// 改进todo内容
 })
+
 const newActivity = ref({
   timestamp: '',
   content: ''
 })
+
+
+// 定义级联选择器的选项
+const categoryOptions = ref([
+  {
+    value: 'orthogonal',
+    label: '三方依赖故障',
+    children: [
+      {
+        value: 'live',
+        label: '直播'
+      },
+      {
+        value: 'chat',
+        label: '聊天'
+      }
+    ]
+  },
+  {
+    value: 'frontend',
+    label: '前端故障',
+    children: [
+      {
+        value: 'Android',
+        label: 'android端故障'
+      },
+      {
+        value: 'iOS',
+        label: 'iOS应用故障'
+      }
+    ]
+  }
+])
+
+// Cascader 配置
+const cascaderProps = {
+  expandTrigger: 'hover',
+  multiple: false,
+  checkStrictly: false
+}
+
+// 选择变化时的处理函数
+const handleChange = (value) => {
+  console.log('选中的值:', value)
+  ElMessage.success(`您选择了: ${value.join(' / ')}`)
+}
 
 // 清理 HTML
 const sanitizeHtml = (html) => {
@@ -123,7 +187,7 @@ const addActivity = () => {
 
 // 提交故障
 const submitFault = () => {
-  if (faultForm.value.name && faultForm.value.initialStatus) {
+  if ( faultForm.value.currentStatus && faultForm.value.desc && faultForm.value.category && faultForm.value.level && faultForm.value.impact && faultForm.value.duration && faultForm.value.timeline.length > 0 && faultForm.value.todoContent) {
     console.log('提交故障:', faultForm.value)
     ElMessage.success('故障创建成功')
     router.push('/fault-management')
@@ -339,14 +403,17 @@ const cancelEditingTimestamp = () => {
 }
 
 .form-item-container {
-  margin-top: 20px;
+  margin-top: 10px;
   display: flex;
-  gap: 20px;
+  flex-wrap: wrap;
+  justify-content: space-between;
+
   /* 可选：设置组件之间的间距 */
+  gap: 20px 50px;
 }
 
 .custom-select {
-  width: 200px;
+  width: 190px;
   /* 设置选择框的宽度 */
 }
 </style>
