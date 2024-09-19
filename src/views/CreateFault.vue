@@ -1,23 +1,23 @@
 <template>
   <div class="create-fault">
-    <el-form :model="faultForm" label-width="120px">
+    <el-form :model="faultForm"  :rules="rules" ref="faultFormRef" label-width="120px">
       <h2>新建故障</h2>
-      <el-form-item label="故障简述">
+      <el-form-item label="故障简述" prop="desc">
         <el-input type="textarea" v-model="faultForm.desc" autosize></el-input>
       </el-form-item>
       <div class="form-item-container">
-        <el-form-item label="故障类型">
+        <el-form-item label="故障类型" prop="category">
           <el-cascader v-model="faultForm.category" :options="categoryOptions" :props="cascaderProps"
             @change="handleChange" class="custom-select" />
         </el-form-item>
-        <el-form-item label="故障等级">
+        <el-form-item label="故障等级" prop="level">
           <el-select v-model="faultForm.level" placeholder="请选择故障等级" class="custom-select">
             <el-option label="低" value="低"></el-option>
             <el-option label="中" value="中"></el-option>
             <el-option label="高" value="高"></el-option>
           </el-select>
         </el-form-item>
-        <el-form-item label="当前状态">
+        <el-form-item label="当前状态" prop="currentStatus">
           <el-select v-model="faultForm.currentStatus" placeholder="请选择故障当前状态" class="custom-select">
             <el-option label="未处理" value="未处理"></el-option>
             <el-option label="处理中" value="处理中"></el-option>
@@ -26,10 +26,10 @@
           </el-select>
         </el-form-item>
       </div>
-      <el-form-item label="故障影响">
+      <el-form-item label="故障影响" prop="impact">
         <el-input type="textarea" v-model="faultForm.impact" autosize></el-input>
       </el-form-item>
-      <el-form-item label="故障持续时间">
+      <el-form-item label="故障持续时间" prop="duration">
       <el-date-picker
         v-model="faultForm.duration"
         type="datetimerange"
@@ -37,9 +37,9 @@
         start-placeholder="Start date"
         end-placeholder="End date"
       />
-    </el-form-item>
+      </el-form-item>
       <h2>故障处理时间线</h2>
-      <el-timeline>
+      <el-timeline prop="timeline">
         <el-timeline-item v-for="(activity, index) in faultForm.timeline" :key="index">
 
           <div class="timeline-timestamp" v-if="editingTimestampIndex !== index">
@@ -52,7 +52,6 @@
             @blur="cancelEditingTimestamp" @close="cancelEditingTimestamp" />
 
           <div class="timeline-content">
-
             <md-editor v-if="editingIndex === index" v-model="editingContent" />
             <MdPreview v-else :modelValue="activity.content" />
           </div>
@@ -67,21 +66,21 @@
         </el-timeline-item>
       </el-timeline>
 
-
-      <el-form-item label="时间" :model="newActivity" label-width="100px">
+      <el-form-item label="时间" :model="newActivity"  prop="timeline" label-width="100px">
         <el-date-picker v-model="newActivity.timestamp" type="datetime" placeholder="选择日期时间"></el-date-picker>
       </el-form-item>
-      <el-form-item label="处理内容">
+      <el-form-item label="处理内容" prop="timeline">
         <!-- <div class="custom-md-editor"> -->
         <md-editor v-model="newActivity.content" preview-theme="light" />
         <!-- </div> -->
       </el-form-item>
       <el-form-item>
-        <el-button type="primary" @click="addActivity">添加处理记录</el-button>
+        <!-- <el-button v-if="newActivity.value.timestamp && newActivity.value.content"  >Default</el-button> -->
+        <el-button  type="primary" @click="addActivity">添加时间节点记录</el-button>
       </el-form-item>
 
       <h2>改进todo</h2>
-      <el-form-item :model="faultForm" label-width="100px">
+      <el-form-item :model="faultForm" prop="todoContent" label-width="100px">
         <md-editor v-model="faultForm.todoContent" preview-theme="light" />
       </el-form-item>
     </el-form>
@@ -114,6 +113,47 @@ const faultForm = ref({
   duration: '', // 故障持续时间
   timeline: [], // 故障处理时间线
   todoContent: ''// 改进todo内容
+})
+
+const faultFormRef = ref(null)
+
+const rules = reactive({
+  desc: [
+    { required: true, message: '请填写故障简述', trigger: 'blur' },
+    { min: 3, max: 500, message: '长度应在 3 到 500 个字符', trigger: 'blur' }
+  ],
+  category: [
+    { type: 'array', required: true, message: '请选择故障类型', trigger: 'change' }
+  ],
+  level: [
+    { required: true, message: '请选择故障等级', trigger: 'change' }
+  ],
+  currentStatus: [
+    { required: true, message: '请选择当前状态', trigger: 'change' }
+  ],
+  impact: [
+    { required: true, message: '请填写故障影响', trigger: 'blur' }
+  ],
+  duration: [
+    { type: 'array', required: true, message: '请选择故障持续时间', trigger: 'change' }
+  ],
+  timeline: [
+    { 
+      type: 'array', 
+      required: true, 
+      message: '请添加至少一条时间线记录', 
+      validator: (rule, value, callback) => {
+        if (value.length === 0) {
+          callback(new Error('请添加至少一条时间线记录'));
+        } else {
+          callback();
+        }
+      }
+    }
+  ],
+  todoContent: [
+    { required: true, message: '请填写改进todo内容', trigger: 'change' }
+  ]
 })
 
 const newActivity = ref({
@@ -174,12 +214,20 @@ const sanitizeHtml = (html) => {
 
 // 添加处理记录
 const addActivity = () => {
+  // 触发表单验证
   if (newActivity.value.timestamp && newActivity.value.content) {
     faultForm.value.timeline.push({
       timestamp: newActivity.value.timestamp,
       content: sanitizeHtml(newActivity.value.content)
     })
     newActivity.value = { timestamp: '', content: '' }
+    // 触发表单验证
+    // 修改验证调用
+    faultFormRef.value.validateField('timeline', (valid, field) => {
+      if (!valid) {
+        console.log('Timeline validation failed:', field)
+      }
+    })    
   } else {
     ElMessage.warning('请填写完整的处理记录')
   }
@@ -187,14 +235,25 @@ const addActivity = () => {
 
 // 提交故障
 const submitFault = () => {
-  if ( faultForm.value.currentStatus && faultForm.value.desc && faultForm.value.category && faultForm.value.level && faultForm.value.impact && faultForm.value.duration && faultForm.value.timeline.length > 0 && faultForm.value.todoContent) {
-    console.log('提交故障:', faultForm.value)
-    ElMessage.success('故障创建成功')
-    router.push('/fault-management')
-  } else {
-    ElMessage.error('请填写完整的故障信息')
-  }
-}
+  console.log('提交前的表单数据:', faultForm.value)
+  faultFormRef.value.validate((valid,fields) => {
+    console.log('验证结果:', valid, fields)
+    if (valid) {
+      // 表单验证通过，执行提交逻辑
+      console.log('提交的故障信息：', faultForm.value)
+      ElMessage.success('故障创建成功')
+      router.push('/fault-management')
+      // 重置表单
+      faultFormRef.value.resetFields()
+      faultForm.value.timeline = []
+    } else {
+      console.log('验证失败的字段:', fields)
+      ElMessage.error('请填写完整的故障信息')
+    }
+  })
+};
+
+
 
 // 删除活动
 const removeActivity = (index) => {
@@ -205,6 +264,13 @@ const removeActivity = (index) => {
   }).then(() => {
     faultForm.value.timeline.splice(index, 1)
     ElMessage.success('删除成功')
+    // 触发表单验证
+    // 修改验证调用
+    faultFormRef.value.validateField('timeline', (valid, field) => {
+      if (!valid) {
+        console.log('Timeline validation failed after removal:', field)
+      }
+    })
   }).catch(() => {
     // 取消删除操作
   })
