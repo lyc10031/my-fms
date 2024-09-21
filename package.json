@@ -12,6 +12,7 @@
     "@element-plus/icons-vue": "^2.3.1",
     "@vue/compiler-dom": "^3.5.6",
     "@vue/compiler-sfc": "^3.5.6",
+    "axios": "^1.7.7",
     "dompurify": "^3.1.6",
     "element-plus": "^2.8.2",
     "md-editor-v3": "^4.20.1",

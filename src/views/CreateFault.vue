@@ -66,7 +66,7 @@
         </el-timeline-item>
       </el-timeline>
 
-      <el-form-item label="时间" :model="newActivity"  prop="timeline" label-width="100px">
+      <el-form-item label="时间节点" :model="newActivity"  prop="timeline" label-width="120px">
         <el-date-picker v-model="newActivity.timestamp" type="datetime" placeholder="选择日期时间"></el-date-picker>
       </el-form-item>
       <el-form-item label="处理内容" prop="timeline">
@@ -92,6 +92,7 @@
 
 
 <script setup>
+import api from '@/api/index.js'
 import DOMPurify from 'dompurify';
 import 'md-editor-v3/lib/style.css';
 
@@ -135,21 +136,58 @@ const rules = reactive({
     { required: true, message: '请填写故障影响', trigger: 'blur' }
   ],
   duration: [
-    { type: 'array', required: true, message: '请选择故障持续时间', trigger: 'change' }
-  ],
-  timeline: [
+    // { type: 'array', required: true, message: '请选择故障持续时间', trigger: 'change' }
     { 
       type: 'array', 
       required: true, 
-      message: '请添加至少一条时间线记录', 
+      message: '请选择故障持续时间', 
+      trigger: 'change',
       validator: (rule, value, callback) => {
-        if (value.length === 0) {
-          callback(new Error('请添加至少一条时间线记录'));
+        if (!value || value.length !== 2) {
+          callback(new Error('请选择完整的故障持续时间范围'))
+        } else if (value[0] >= value[1]) {
+          callback(new Error('结束时间必须晚于开始时间'))
         } else {
-          callback();
+          callback()
         }
       }
     }
+  ],
+  timeline: [
+    // { 
+    //   type: 'array', 
+    //   required: true, 
+    //   message: '请添加至少一条时间线记录', 
+    //   validator: (rule, value, callback) => {
+    //     if (value.length === 0) {
+    //       callback(new Error('请添加至少一条时间线记录'));
+    //     } else {
+    //       callback();
+    //     }
+    //   }
+    // }
+
+    { 
+    type: 'array', 
+    required: true, 
+    message: '请添加至少一条时间线记录', 
+    validator: (rule, value, callback) => {
+      if (value.length === 0) {
+        callback(new Error('请添加至少一条时间线记录'))
+      } else {
+        const isValid = value.every(item => 
+          item.timestamp && 
+          item.content && 
+          item.content.trim().length > 0
+        )
+        if (!isValid) {
+          callback(new Error('所有时间线记录必须包含有效的时间戳和内容'))
+        } else {
+          callback()
+        }
+      }
+    }
+  }
   ],
   todoContent: [
     { required: true, message: '请填写改进todo内容', trigger: 'change' }
@@ -212,46 +250,110 @@ const sanitizeHtml = (html) => {
   return DOMPurify.sanitize(html)
 }
 
-// 添加处理记录
+// 添加处理记录 
+// const addActivity = () => {
+//   // 触发表单验证
+//   if (newActivity.value.timestamp && newActivity.value.content) {
+//     faultForm.value.timeline.push({
+//       timestamp: newActivity.value.timestamp,
+//       content: sanitizeHtml(newActivity.value.content)
+//     })
+//     newActivity.value = { timestamp: '', content: '' }
+//     // 触发表单验证
+//     // 修改验证调用
+//     faultFormRef.value.validateField('timeline', (valid, field) => {
+//       if (!valid) {
+//         console.log('Timeline validation failed:', field)
+//       }
+//     })    
+//   } else {
+//     ElMessage.warning('请填写完整的处理记录')
+//   }
+// }
 const addActivity = () => {
-  // 触发表单验证
-  if (newActivity.value.timestamp && newActivity.value.content) {
-    faultForm.value.timeline.push({
-      timestamp: newActivity.value.timestamp,
-      content: sanitizeHtml(newActivity.value.content)
-    })
+  if (newActivity.value.timestamp && newActivity.value.content.trim()) {
+    // 创建新的活动对象
+    const activity = {
+      timestamp: new Date(newActivity.value.timestamp).toISOString(),
+      content: DOMPurify.sanitize(newActivity.value.content.trim())
+    }
+
+    // 添加到时间线
+    faultForm.value.timeline.push(activity)
+
+    // 重置新活动输入
     newActivity.value = { timestamp: '', content: '' }
-    // 触发表单验证
-    // 修改验证调用
-    faultFormRef.value.validateField('timeline', (valid, field) => {
-      if (!valid) {
-        console.log('Timeline validation failed:', field)
+
+    // 验证时间线字段
+    faultFormRef.value.validateField('timeline', (valid) => {
+      if (valid) {
+        ElMessage({
+          message: '时间节点记录添加成功',
+          type: 'success',
+          duration: 2000
+        })
+      } else {
+        ElMessage({
+          message: '时间节点记录已添加，但可能不满足整体要求，请检查',
+          type: 'warning',
+          duration: 3000
+        })
       }
-    })    
+    })
+
+    // 触发表单的 change 事件（如果需要）
+    // faultFormRef.value.emit('change', faultForm.value)
   } else {
-    ElMessage.warning('请填写完整的处理记录')
+    ElMessage({
+      message: '请填写完整的处理记录（时间和内容）',
+      type: 'warning',
+      duration: 2000
+    })
   }
 }
 
-// 提交故障
-const submitFault = () => {
-  console.log('提交前的表单数据:', faultForm.value)
-  faultFormRef.value.validate((valid,fields) => {
-    console.log('验证结果:', valid, fields)
-    if (valid) {
-      // 表单验证通过，执行提交逻辑
-      console.log('提交的故障信息：', faultForm.value)
+
+// 提交故障 TODO: 待后端接口
+// const submitFault = () => {
+//   console.log('提交前的表单数据:', faultForm.value)
+//   faultFormRef.value.validate((valid,fields) => {
+//     console.log('验证结果:', valid, fields)
+//     if (valid) {
+//       // 表单验证通过，执行提交逻辑
+//       console.log('提交的故障信息：', faultForm.value)
+//       ElMessage.success('故障创建成功')
+//       router.push('/fault-management')
+//       // 重置表单
+//       faultFormRef.value.resetFields()
+//       faultForm.value.timeline = []
+//     } else {
+//       console.log('验证失败的字段:', fields)
+//       ElMessage.error('请填写完整的故障信息')
+//     }
+//   })
+// };
+
+const submitFault = async () => {
+  try {
+    await faultFormRef.value.validate()
+    const response = await api.post('/api/createFaults', faultForm.value)
+    if (response.data.success) {
       ElMessage.success('故障创建成功')
       router.push('/fault-management')
-      // 重置表单
       faultFormRef.value.resetFields()
       faultForm.value.timeline = []
     } else {
-      console.log('验证失败的字段:', fields)
-      ElMessage.error('请填写完整的故障信息')
+      ElMessage.error(response.data.message || '创建失败，请重试')
     }
-  })
-};
+  } catch (error) {
+    if (error.name === 'ValidationError') {
+      ElMessage.error('请填写完整的故障信息')
+    } else {
+      console.error(`提交故障信息时出错: error: ${error}; faultForm.value: ${JSON.stringify(faultForm.value)}`)
+      ElMessage.error('提交失败，请稍后重试')
+    }
+  }
+}
 
 
 
